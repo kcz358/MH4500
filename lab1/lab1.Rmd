@@ -1,0 +1,33 @@
+---
+title: "lab1"
+author: "Zhang Kc"
+date: "2025-02-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r load, echo=FALSE}
+soi = scan("soi.dat")
+recruit = scan("recruit.dat")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot.ts(soi)
+```
+
+
+```{r}
+par(mfrow=c(2,1))
+plot.ts(soi)
+plot.ts(recruit)
+```
+

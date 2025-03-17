@@ -1,0 +1,162 @@
+---
+title: "MH4500 Lab2"
+author: "Zhang Kaichen"
+date: "2025-02-23"
+output:
+  rmdformats::readthedown
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Lab2
+
+## Part 1
+
+```{r}
+# Read Data
+global = scan("globtemp.dat")
+
+# Save into PDF File
+pdf("globalplot.pdf")
+plot.ts(global)
+dev.off()
+
+# Get Diff
+globaldiff = diff(global)
+# Diff Plot
+pdf("globaldiffplot.pdf")
+plot.ts(globaldiff)
+dev.off()
+# ACF plot
+pdf("globalacf.pdf")
+acf(global)
+dev.off()
+# Diff ACF plot
+pdf("globaldiffacf.pdf")
+acf(globaldiff)
+dev.off()
+
+```
+
+## Writing Functions
+
+```{r}
+
+# Simple Add result
+add = function(a,b){
+  result=a+b
+  return(result)
+}
+
+add(2,3)
+
+# Random Walk
+
+randomwalk = function(sigsq, T){
+  x = rep(0,T)
+  w = rnorm(T, sd=sqrt(sigsq))
+  for (i in 2:T){
+    x[i] = x[i-1] + w[i]
+  }
+  return(x)
+}
+
+walk_50 <- randomwalk(1, 50)
+acf(walk_50)
+walk_100 <- randomwalk(1, 100)
+acf(walk_100)
+
+```
+
+```{r}
+arsim = function(phis, sigsq, T){
+  p <- length(phis)
+  noise <- rnorm(T+p, sd=sqrt(sigsq))
+  x = c(noise[1:p], rep(0, T))
+  for ( i in (p+1) : (T+p)) {
+    x[i] = phis %*% x[i-(1-p)] + noise[i]
+  }
+  x=x[(p+1):(T+p)]
+  return(x)
+}
+
+x1 <- arsim(c(0.5), 1, 200)
+acf(x1)
+
+x1_negative <- arsim(c(-0.5), 1, 200)
+acf(x1_negative)
+
+x2 <- arsim(c(1.1), 1, 200)
+acf(x2)
+```
+
+
+# Homework
+
+## Question 1
+The masim function generates a simulated Moving Average (MA) process of order q based on specified parameters. The function models a time series where each observation is a linear combination of past white noise terms, weighted by given MA coefficients (theta values).
+
+Function Arguments:
+- thetas: A numeric vector of length q, representing the MA coefficients
+- sigsq: A positive numeric value representing the variance of the white noise process.
+- T: An integer specifying the length of the simulated time series.
+
+Function Logic:
+- The function generates T + q independent and identically distributed (i.i.d.) normal noise values with mean zero and variance sigsq.
+- The function appends 1 to the beginning of thetas, ensuring that $\theta_{0} = 1$ , which is conventional in some MA representations.
+- The function iterates over time indices 1 to T, computing each observation
+```{r}
+
+# Question 1
+masim <- function(thetas, sigsq, T){
+  # Get number of Q
+  q <- length(thetas)
+  # Initialize noise
+  noise <- rnorm(T + q, sd=sqrt(sigsq))
+  x <- rep(0, T)
+  # Generate the MA(q) process
+  for (t in 1:T) {
+    x[t] <- sum(thetas * noise[t + (q:1)])  # Proper lagging of noise
+  }
+  return(x)
+}
+```
+
+## Question 2
+
+By simulating a model with 1000 observations, we can see that all the acf cuts off after q = 2, demonstrate that the ACF for a MA(q) time series cut-off after lag q.
+
+```{r}
+# Trial 1
+qn2_data_trial1 <- masim(c(0.5, 2), 1, 1000)
+acf(qn2_data_trial1)
+```
+
+We then generated a model with 200 observations and repeated this for a few time. We can see that the width between the dotted blue lines is wider than the 1000 observations. This indicates that the standard deviation is larger for 200 samples
+
+```{r}
+# Trial 1
+qn2_data_200_trial1 <- masim(c(0.5, 2), 1, 200)
+acf(qn2_data_200_trial1)
+qn2_data_200_trial2 <- masim(c(0.5, 2), 1, 200)
+acf(qn2_data_200_trial2)
+qn2_data_200_trial3 <- masim(c(0.5, 2), 1, 200)
+acf(qn2_data_200_trial3)
+qn2_data_200_trial4 <- masim(c(0.5, 2), 1, 200)
+acf(qn2_data_200_trial4)
+```
+
+
+
+## Question 3
+
+We than fitted a model using arima for the data generated for 1000 observations. Because we are generating a MA(2) model. So we are using with order = (0,0,2). We can see that because the root of $1+0.5B+2B^2$ is inside unit circle. This MA model is non-invertible. 
+```{r}
+# By default use the data in trial 1
+fit <- arima(qn2_data_trial1, order=c(0,0,2))
+summary(fit)
+fit
+```
+
